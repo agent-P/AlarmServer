@@ -1,0 +1,5 @@
+spagnola/websockets/AlarmWebSocket.class
+spagnola/alarm/AlarmApplication.class
+spagnola/alarm/AlarmProperties.class
+spagnola/alarm/ReadThread.class
+spagnola/alarm/AlarmServer.class
