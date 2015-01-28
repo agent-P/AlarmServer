@@ -108,6 +108,9 @@ public class AlarmApplication extends WebSocketApplication {
             broadcast("system", ((AlarmWebSocket)websocket).getUser() + " has connected.");
         }
         else {
+            websocket.close();
+            ((AlarmWebSocket)websocket).setUser(ipAddress);
+            broadcast("system", "Unauthorized connection attempt from: " + ((AlarmWebSocket)websocket).getUser());
             logger.warning("IP Address: " + ipAddress + " not authorized.");
         }
     }

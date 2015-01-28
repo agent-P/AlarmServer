@@ -47,19 +47,6 @@ public class AlarmProperties {
             input = new FileInputStream(CONF_PATH);
             properties.load(input);
             
-            /** Get the property value for the port that serves the websocket. */
-            PORT = Integer.parseInt(properties.getProperty("websocket-port"));
-            /** Get the property value for the path to the web app that is served by the websocket. */
-            WEBAPP_PATH = properties.getProperty("webapp-path");
-            /** Get the property value for the port ser2sock is listening on. */
-            ALARM_PORT = Integer.parseInt(properties.getProperty("alarm-port"));
-            /** Get the property value for the name or IP address of the host running ser2sock */
-            ALARM_HOST = properties.getProperty("alarm-host");
-            /** Get the property value for the list of allowed IP addresses. */
-            allowed = properties.getProperty("allowed-list");
-            /** Create a Set pf the allowed list of IP addresses. */
-            ALLOWED_LIST = new HashSet<String>(Arrays.asList(allowed.split(",")));
-            
             /** Get the property value for the Logging Level. Set the level as specified, or to WARNING if
              value not recognized or specified. */
             String logLevel = properties.getProperty("log-level");
@@ -88,6 +75,25 @@ public class AlarmProperties {
             
             LOG_LEVEL = LOGGER.getLevel();
             
+            
+            /** Get the property value for the port that serves the websocket. */
+            PORT = Integer.parseInt(properties.getProperty("websocket-port"));
+            /** Get the property value for the path to the web app that is served by the websocket. */
+            WEBAPP_PATH = properties.getProperty("webapp-path");
+            /** Get the property value for the port ser2sock is listening on. */
+            ALARM_PORT = Integer.parseInt(properties.getProperty("alarm-port"));
+            /** Get the property value for the name or IP address of the host running ser2sock */
+            ALARM_HOST = properties.getProperty("alarm-host");
+            /** Get the property value for the list of allowed IP addresses. */
+            allowed = properties.getProperty("allowed-list");
+            /** If there is an allowed list, create a Set of the allowed list of IP addresses. */
+            if(allowed != null) {
+                ALLOWED_LIST = new HashSet<String>(Arrays.asList(allowed.split(",")));
+            }
+            else {
+                LOGGER.severe("No allowed devices specified, sever exiting.");
+                System.exit(0);
+            }
             
             //LOGGER.info("properties file loaded...");
             LOGGER.info("allowed-list = " + allowed);
