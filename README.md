@@ -24,7 +24,7 @@ A maven pom file is provide to build and package the server.
 1. Note all dependencies for this project are specified in the maven pom file.
 2. Clone this repository to any system with java and maven installed.<br/>
 3. cd to the root directory of the project.<br/>
-4. Build the project with: <code>mV install</code>
+4. Build the project with: <code>mvn install</code>
 5. To start the application: <code>java -jar ./target/websockets-home-automation-2.3.14-jar-with-dependencies.jar</code>
 
 
