@@ -1,4 +1,3 @@
-# AlarmServer
 Alarm Server
 ============
 
