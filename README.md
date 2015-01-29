@@ -25,6 +25,7 @@ A maven pom file is provide to build and package the server.
 2. Clone this repository to any system with java and maven installed.<br/>
 3. cd to the root directory of the project.<br/>
 4. Build the project with: <code>mvn install</code>
+5. Note the application expects a <code>alarm.conf</code> file to be in <code>/etc</code>, See the example.
 5. To start the application: <code>java -jar ./target/websockets-home-automation-2.3.14-jar-with-dependencies.jar</code>
 
 
