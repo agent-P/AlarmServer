@@ -74,7 +74,7 @@ public class AlarmApplication extends WebSocketApplication {
      */
     @Override
     public WebSocket createSocket(ProtocolHandler handler, HttpRequestPacket request, WebSocketListener... listeners) {
-        logger.setLevel(AlarmProperties.getInstance().LOG_LEVEL);
+        
         return new AlarmWebSocket(handler, request, listeners);
     }
 

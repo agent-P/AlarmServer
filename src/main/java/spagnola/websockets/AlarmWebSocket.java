@@ -34,7 +34,6 @@ public class AlarmWebSocket extends DefaultWebSocket {
 
     public AlarmWebSocket(ProtocolHandler protocolHandler, HttpRequestPacket request, WebSocketListener... listeners) {
         super(protocolHandler, request, listeners);
-        logger.setLevel(AlarmProperties.getInstance().LOG_LEVEL);
         
         /** Set the protocol handler. */
         this.protocolHandler = protocolHandler;

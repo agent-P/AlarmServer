@@ -44,8 +44,6 @@ public class AlarmServer {
         ALARM_HOST = properties.ALARM_HOST;
         ALARM_PORT = properties.ALARM_PORT;
         
-        LOGGER.setLevel(properties.LOG_LEVEL);
-        
         
         /** Create the socket to talk to the alarm panel. */
         Socket alarmPanelSocket = new Socket(ALARM_HOST, ALARM_PORT);

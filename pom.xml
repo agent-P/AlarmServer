@@ -8,7 +8,6 @@
         <groupId>org.glassfish.grizzly</groupId>
         <artifactId>grizzly-project</artifactId>
         <version>2.3.14</version>
-        <relativePath>../../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <groupId>spagnola</groupId>
@@ -16,7 +15,6 @@
     <packaging>jar</packaging>
     <version>2.3.14</version>
     <name>alarm-panel</name>
-    <!-- <url>http://maven.apache.org</url> -->
     <build>
         <defaultGoal>install</defaultGoal>
         <resources>
@@ -30,23 +28,6 @@
             </testResource>
         </testResources>
         <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <version>${felix-version}</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Import-Package>
-                            org.glassfish.grizzly*;version=${project.version},
-                            *,
-                        </Import-Package>
-                        <Export-Package>
-                            spagnola.alarm;version=${project.version},
-                        </Export-Package>
-                    </instructions>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
@@ -101,10 +82,12 @@
         <dependency>
             <groupId>org.glassfish.grizzly</groupId>
             <artifactId>grizzly-http-servlet</artifactId>
+            <version>2.3.14</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.grizzly</groupId>
             <artifactId>grizzly-websockets</artifactId>
+            <version>2.3.14</version>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>

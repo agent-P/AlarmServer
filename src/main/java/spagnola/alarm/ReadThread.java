@@ -16,12 +16,9 @@ public class ReadThread implements Runnable {
     
     private AlarmApplication alarmApplication;
     
-    ReadThread(AlarmApplication alarmApplication) {
-        
-        LOGGER.setLevel(AlarmProperties.getInstance().LOG_LEVEL);
+    ReadThread(AlarmApplication alarmApplication) {        
         
         this.alarmApplication = alarmApplication;
-        
         
         LOGGER.info("Creating " +  threadName );
     }
