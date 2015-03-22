@@ -73,14 +73,17 @@ public class AlarmServer {
         try {
             /** Try to start the server and the read thread. */
             server.start();
-            LOGGER.info("Press any key to stop the server...");
-            System.out.println("Enter any keyboard input to kill the server...");
+            //LOGGER.info("Press any key to stop the server...");
+            //System.out.println("Enter any keyboard input to kill the server...");
             
             readThread.start();
             
-            /** Block the method from falling through to exit until user keyboard input. */
-            System.in.read();
-        } finally {
+            /** Block the method from falling through to exit. */
+            while (true) {
+                Thread.sleep (3000);
+            }
+        }
+        finally {
             /** Finally, stop the server and the read thread. */
             server.shutdownNow();
             readThread.stop();
