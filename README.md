@@ -3,23 +3,19 @@ Alarm Server
 
 Java Grizzly server that serves a read write connection to Vista 10 and Vista 20 alarm panels through ser2soc. The server and webapp are under development. Currently the webapp contains a simple javascript test fixture to view the broadcast messages from the server and send string commands to the alarm panel. It also contains an LCARS prototype iPhone interface. Only Mode 2 is functional.
 
-Portrait Mode 1
-----------------
+##### Portrait Mode 1
 
 ![Panel screenshot portrait mode1](https://github.com/agent-P/AlarmServer/raw/master/docs/ScreenShotPortraitMode1.png)
 
-Portrait Mode 2
-----------------
+##### Portrait Mode 2
 
 ![Panel screenshot portrait mode1](https://github.com/agent-P/AlarmServer/raw/master/docs/ScreenShotPortraitMode2.png)
 
-Landscape Mode 1
-----------------
+##### Landscape Mode 1
 
 ![Panel screenshot portrait mode1](https://github.com/agent-P/AlarmServer/raw/master/docs/ScreenShotLandscapeMode1.png)
 
-Landscape Mode 2
-----------------
+##### Landscape Mode 2
 
 ![Panel screenshot portrait mode1](https://github.com/agent-P/AlarmServer/raw/master/docs/ScreenShotLandscapeMode2.png)
 
@@ -57,7 +53,6 @@ Copy <code>alarm-server.sh</code> to <code>/etc/init.d</code><br/>
 $ sudo cp alarm-server.sh /etc/init.d/alarm-server
 $ sudo chmod 755 /etc/init.d/alarm-server
 $ sudo chown root:root /etc/init.d/alarm-server
-
 ```
 note: the <code>.sh</code> file extension is dropped, also, the script expects the application root to be <code>/home/pi/apps/AlarmServer</code><br/>
 
