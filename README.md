@@ -52,7 +52,7 @@ A maven pom file is provide to build and package the server.
 Installing Alarm Server on Raspberry Pi
 ---------------------------------------
 
-Copy alarm-server.sh to /etc/init.d
+###### Copy <code>alarm-server.sh</code> to <code>/etc/init.d</code>
 ```
 $ sudo cp alarm-server.sh /etc/init.d/alarm-server
 $ sudo chmod 755 /etc/init.d/alarm-server
@@ -60,7 +60,8 @@ $ sudo chown root:root /etc/init.d/alarm-server
 
 ```
 note: the <code>.sh</code> file extension is dropped, also, the script expects the application root to be <code>/home/pi/apps/AlarmServer</code>
-Add the appropriate symbolic links to cause the script to be executed when the system goes down, or comes up. The simplest way of doing this is to use the Debian-specific command <code>update-rc.d</code>:
+
+###### Add the appropriate symbolic links to cause the script to be executed when the system goes down, or comes up. The simplest way of doing this is to use the Debian-specific command <code>update-rc.d</code>:
 ```
 $ sudo update-rc.d alarm-server defaults
 ```
