@@ -48,6 +48,8 @@ A maven pom file is provide to build and package the server.
 Installing Alarm Server on Raspberry Pi
 ---------------------------------------
 
+Copy the AlarmServer directory to <code>/home/pi/apps/AlarmServer</code>. It can be trimmed extensively if it is not being built on the target node. Files can also be moved to other directories, but <code>/etc/alarm.conf</code> and <code>/etc/init.d/alarm-server</code> must be updated accordingly.<br/>
+
 Copy <code>alarm-server.sh</code> to <code>/etc/init.d</code><br/>
 ```
 $ sudo cp alarm-server.sh /etc/init.d/alarm-server
