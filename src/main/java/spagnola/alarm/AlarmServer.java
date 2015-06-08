@@ -11,6 +11,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.glassfish.grizzly.Grizzly;
+import org.glassfish.grizzly.ssl.SSLContextConfigurator;
+import org.glassfish.grizzly.ssl.SSLEngineConfigurator;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.grizzly.websockets.WebSocketAddOn;
 import org.glassfish.grizzly.websockets.WebSocketApplication;
@@ -53,6 +55,8 @@ public class AlarmServer {
 
         /** Register the WebSockets add-on with the HttpServer. */
         server.getListener("grizzly").registerAddOn(new WebSocketAddOn());
+        //server.getListener("grizzly").setSSLEngineConfig(createSslConfiguration());
+        //server.getListener("grizzly").setSecure(true);
 
         /** Create and initialize the websocket alarm application. */
         final WebSocketApplication alarmApplication = new AlarmApplication();
@@ -69,24 +73,59 @@ public class AlarmServer {
         /** Set the ReadThread socket to the alarm panel. */
         readThread.setAlarmPanelSocket(alarmPanelSocket);
         
-
+        /** Register a shutdown hook. */
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                /** When shutdown is detected, stop the server and the read thread. */
+                LOGGER.warning("Stopping server..");
+                server.shutdownNow();
+                readThread.stop();
+            }
+        }, "shutdownHook"));
+        
+        /** Start the server. */
         try {
             /** Try to start the server and the read thread. */
+            LOGGER.warning("Starting server..");
             server.start();
-            //LOGGER.info("Press any key to stop the server...");
-            //System.out.println("Enter any keyboard input to kill the server...");
             
+            /** Start the thread that reads the alarm panel interface. */
             readThread.start();
             
-            /** Block the method from falling through to exit. */
-            while (true) {
-                Thread.sleep (3000);
-            }
+            /** Block exit of the main thread until shutdown detected. */
+            Thread.currentThread().join();
+            
         }
-        finally {
-            /** Finally, stop the server and the read thread. */
-            server.shutdownNow();
-            readThread.stop();
+        catch(Exception e) {
+            LOGGER.severe("There was an error while starting the server." + e.toString());
         }
     }
+    
+    /**
+     * Initialize server side SSL configuration.
+     *
+     * @return server side {@link SSLEngineConfigurator}.
+     */
+    private static SSLEngineConfigurator createSslConfiguration() {
+        // Initialize SSLContext configuration
+        SSLContextConfigurator sslContextConfig = new SSLContextConfigurator();
+        
+        ClassLoader cl = AlarmServer.class.getClassLoader();
+        // Set key store
+        URL keystoreUrl = cl.getResource("keystore.jks");
+        if (keystoreUrl != null) {
+            sslContextConfig.setKeyStoreFile(keystoreUrl.getFile());
+            sslContextConfig.setKeyStorePass("changeit");
+        }
+        else {
+            LOGGER.severe("Resource: keystore.jks, not found");
+        }
+        
+        
+        // Create SSLEngine configurator
+        return new SSLEngineConfigurator(sslContextConfig.createSSLContext(),
+                                         false, false, false);
+    }
+
 }

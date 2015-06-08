@@ -7,6 +7,7 @@ package spagnola.alarm;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.text.*;
 import java.util.Collections;
 import java.util.Set;
 import java.util.logging.Level;
@@ -48,6 +49,9 @@ public class AlarmApplication extends WebSocketApplication {
     /** PrintWriter for writing to the alarm panel Socket. */
     private PrintWriter out;
     
+    /** Last message received from alarm panel. To broadcast immediately on connect. Initialized to null. */
+    private String lastMessage = null;
+    
     /**
      * Sets the socket for talking to the alram panel, and creates the PrintWriter
      * object for writing to it.
@@ -80,7 +84,8 @@ public class AlarmApplication extends WebSocketApplication {
 
     /**
      * Method is called, when {@link AlarmWebSocket} receives a {@link Frame}. Commands to the alarm panel
-     * are written to the PrintWriter of the alarm panel Socket.
+     * are written to the PrintWriter of the alarm panel Socket. A conditional response is broadcast to 
+     * all connected devices.
      * @param websocket {@link AlarmWebSocket}
      * @param data {@link Frame}
      *
@@ -88,8 +93,37 @@ public class AlarmApplication extends WebSocketApplication {
      */
     @Override
     public void onMessage(WebSocket websocket, String data) {
-        broadcast(((AlarmWebSocket)websocket).getUser(), data);
-        out.println(data);
+        
+        StringBuffer response = new StringBuffer("");
+        String user = ((AlarmWebSocket)websocket).getUser();
+        
+        if(data.length() == 1) {
+            switch(data.charAt(0)) {
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                case '*':
+                case '#':
+                    response.append("Key press...");
+                    break;
+                default:
+                    response.append("unknown key...");
+                    logger.warning("Unexpected data: " + data + " from user: " + user);
+                    break;
+            }
+            broadcast(user, response.toString());
+            out.println(data);
+        }
+        else {
+            logger.warning("Data: " + data + " rejected from user: " + user);
+        }
     }
 
     /**
@@ -99,10 +133,17 @@ public class AlarmApplication extends WebSocketApplication {
     public void onConnect(WebSocket websocket) {
         
         String ipAddress = ((AlarmWebSocket)websocket).getPeerIPAddress();
-        logger.info("Connection attempt from IP Address: " + ipAddress);
+        logger.warning("Connection attempt from IP Address: " + ipAddress);
         
         if(isAllowed(ipAddress)) {
             members.add(websocket);
+            
+            /** If the last message from the alarm panel is not null, send it to the connecting
+             *  client to give fast current status. DOn't want to wait until nect broadcast.
+             */
+            if(lastMessage != null) {
+                websocket.send(lastMessage);
+            }
         
             ((AlarmWebSocket)websocket).setUser(ipAddress);
             broadcast("system", ((AlarmWebSocket)websocket).getUser() + " has connected.");
@@ -120,20 +161,30 @@ public class AlarmApplication extends WebSocketApplication {
      */
     @Override
     public void onClose(WebSocket websocket, DataFrame frame) {
+
+        String ipAddress = ((AlarmWebSocket)websocket).getPeerIPAddress();
+        logger.warning("IP Address: " + ipAddress + " has disconnected.");
+
         members.remove(websocket);
         broadcast("system", ((AlarmWebSocket)websocket).getUser() + " disconnected.");
     }
 
     /**
-     * Broadcasts the message from the alarm controller and alarm panels.
+     * Broadcasts the messages from the alarm controller and alarm panels.
      *
      * @param device the device identifier
      * @param text the text message
      */
     public void broadcast(String device, String text) {
-        logger.log(Level.INFO, "Broadcasting: {0} from: {1}", new Object[]{text, device});
-        final String jsonMessage = toJsonp(device, text);
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        Date date = new Date();
+        final String timestamp = dateFormat.format(date);
+        
+        logger.log(Level.INFO, "Broadcasting: ", new Object[]{text, device});
+        final String jsonMessage = toJsonp(device, text, timestamp);
         logger.log(Level.INFO, jsonMessage);
+        
+        lastMessage = jsonMessage;
         
         broadcaster.broadcast(members, jsonMessage);
     }
@@ -159,11 +210,26 @@ public class AlarmApplication extends WebSocketApplication {
     }
 
     
-    private static String toJsonp(String name, String message) {
-        return "window.parent.app.update({ name: \"" + escape(name) +
-                "\", message: \"" + escape(message) + "\" });\n";
+    /**
+     * Create the JSON string to broadcast to the keypad clients.
+     *
+     * @param name  the device that generated the message
+     * @param message  the message
+     * @param timestamp  the date and time of the message
+     * @return the formed JSON message as a String object
+     */
+    private static String toJsonp(String name, String message, String timestamp) {
+        return "{ \"name\": \"" + name +
+                "\", \"message\": \"" + escape(message) + "\", \"timestamp\": \"" + timestamp + "\"}\n";
     }
 
+    
+    /**
+     * Handle special characters in the input argument String object.
+     *
+     * @param orig  the String object to be processed for special characters.
+     * @return the corrected String object
+     */
     private static String escape(String orig) {
         StringBuilder buffer = new StringBuilder(orig.length());
 
@@ -189,7 +255,7 @@ public class AlarmApplication extends WebSocketApplication {
                     buffer.append("\\'");
                     break;
                 case '\"':
-                    buffer.append("\\\"");
+                    buffer.append("/");
                     break;
                 case '\\':
                     buffer.append("\\\\");

@@ -1,0 +1,10 @@
+CACHE MANIFEST
+
+# Version: 1.0
+
+CACHE:
+LCARSKeypadTest.html
+js/LCARS_Components.js
+js/LCARS_Screens_iPhone.js
+js/AlarmSocket.js
+img/apple-touch-icon.png

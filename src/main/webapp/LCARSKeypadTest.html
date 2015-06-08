@@ -1,0 +1,378 @@
+<html manifest="./cache.manifest">
+    
+    <head>
+        <title>LCARS Security System</title>
+        <link rel="apple-touch-icon" href="./img/apple-touch-icon.png"/>
+        <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1" />
+        <meta name = "viewport" content = "width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+            
+        <script src="./js/LCARS_Components.js"></script>
+        <script src="./js/LCARS_Screens_iPhone.js"></script>
+        <script src="./js/AlarmSocket.js"></script>
+
+        <script language="javascript" type="text/javascript">
+        
+        var portraitScreen;
+        var landscapeScreen;
+        
+        var indicatorReady;
+        var indicatorArmed;
+        var l_indicatorReady;
+        var l_indicatorArmed;
+        
+        var context;
+        
+        var mode = 1;
+        var _ready;
+        var _armed;
+        
+        
+        /**
+         * Display update functions ************************************************
+         */
+        
+        var updateDisplay = function(data) {
+            
+            /**
+             * Update the ready indicator.
+             */
+            if(data[0] == '1') {
+                _ready = true;
+                indicatorReady.setEnabled(true);
+                l_indicatorReady.setEnabled(true);
+                if(mode == 1) {
+                    armButton.setEnabled(true);
+                    l_armButton.setEnabled(true);
+                }
+            }
+            else {
+                _ready = false;
+                indicatorReady.setEnabled(false);
+                l_indicatorReady.setEnabled(false);
+                if(mode == 1) {
+                    armButton.setEnabled(false);
+                    l_armButton.setEnabled(false);
+                }
+            }
+            
+            /**
+             * Update the armed indicator.
+             */
+            if(data[2] == '1' || data[1] == '1') {
+                _armed = true;
+                indicatorArmed.setEnabled(true);
+                l_indicatorArmed.setEnabled(true);
+                if(mode == 1) {
+                    disarmButton.setEnabled(true);
+                    l_disarmButton.setEnabled(true);
+                }
+            }
+            else {
+                _armed = false;
+                indicatorArmed.setEnabled(false);
+                l_indicatorArmed.setEnabled(false);
+                if(mode == 1) {
+                    disarmButton.setEnabled(false);
+                    l_disarmButton.setEnabled(false);
+                }
+            }
+            
+        }
+        
+        var updateConnectionIndicator = function(status) {
+            if(status == 'connected') {
+                rectConnected.setVisible(true);
+                rectNotConnected.setVisible(false);
+                l_rectConnected.setVisible(true);
+                l_rectNotConnected.setVisible(false);
+            }
+            else {
+                rectConnected.setVisible(false);
+                rectNotConnected.setVisible(true);
+                l_rectConnected.setVisible(false);
+                l_rectNotConnected.setVisible(true);
+                indicatorReady.setEnabled(false);
+                indicatorArmed.setEnabled(false);
+                l_indicatorReady.setEnabled(false);
+                l_indicatorArmed.setEnabled(false);
+                if(mode == 1) {
+                    disarmButton.setEnabled(false);
+                    armButton.setEnabled(false);
+                    l_disarmButton.setEnabled(false);
+                    l_armButton.setEnabled(false);
+                }
+            }
+        }
+        
+        var updateModeDisplay = function(event) {
+            if(event.srcElement.id[5] == '1') {
+                mode = 1;
+                keypad.setVisible(false);
+                l_keypad.setVisible(false);
+                armButton.setVisible(true);
+                disarmButton.setVisible(true);
+                l_armButton.setVisible(true);
+                l_disarmButton.setVisible(true);
+                if(_ready) {
+                    armButton.setEnabled(true);
+                    disarmButton.setEnabled(false);
+                    l_armButton.setEnabled(true);
+                    l_disarmButton.setEnabled(false);
+                }
+                else if(_armed) {
+                    armButton.setEnabled(false);
+                    disarmButton.setEnabled(true);
+                    l_armButton.setEnabled(false);
+                    l_disarmButton.setEnabled(true);
+                }
+                else {
+                    armButton.setEnabled(false);
+                    disarmButton.setEnabled(false);
+                    l_armButton.setEnabled(false);
+                    l_disarmButton.setEnabled(false);
+                }
+            }
+            else if(event.srcElement.id[5] == '2') {
+                mode = 2;
+                keypad.setVisible(true);
+                l_keypad.setVisible(true);
+                disarmButton.setVisible(false);
+                armButton.setVisible(false);
+                l_disarmButton.setVisible(false);
+                l_armButton.setVisible(false);
+            }
+        }
+        
+        /**
+         * The application initialization function ************************************************
+         */
+        var  init = function() {
+            
+            //alert(navigator.userAgent);
+            
+            if(navigator.userAgent.indexOf("iPhone") != -1 || navigator.userAgent.indexOf("iPad") != -1) {
+                LCARS.setFont(LCARS_FONT_MOBILE);
+            }
+            else {
+                LCARS.setFont(LCARS_FONT);
+            }
+            
+            portraitScreen = new LCARSScreen('_portrait', '', 705, 1015, 0, 0, 640, 1136);
+            portraitScreen.setTransform('scale(0.45) translateX(-440px) translateY(-575px)');
+            document.body.appendChild(portraitScreen.divElement);
+            
+            landscapeScreen = new LCARSScreen('_landscape', '', 970, 550, 0, 0, 1136, 640);
+            landscapeScreen.setTransform('scale(0.58) translateX(-355px) translateY(-200px)');
+            document.body.appendChild(landscapeScreen.divElement);
+            
+            updateOrientation();
+            
+            ulc = new LCARSCorner("ULC", "", 5, 5, 415, 1, ES_SHAPE_NW | EC_ORANGE | ES_STATIC);
+            portraitScreen.addComponent(ulc);
+            
+            text_title = new LCARSText("text_title", "SECURITY SYSTEM", 425, 9 + FONT_BUTTON_SIZE , EF_SUBTITLE | EC_ORANGE);
+            portraitScreen.addComponent(text_title);
+            
+            ulc_end_cap = new LCARSRectangle("ulc_end_cap", "", 680, 5, 20, 30, ES_RECT_RND_E | EC_ORANGE);
+            portraitScreen.addComponent(ulc_end_cap);
+
+            indicatorReady = new LCARSRectangle("ready", "READY", 175, 60, 180, 75, EF_SUBTITLE | ES_RECT_RND_W | ES_LABEL_W | EC_BLUE);
+            portraitScreen.addComponent(indicatorReady);
+            
+            indicatorArmed = new LCARSRectangle("armed", "ARMED", 360, 60, 290, 75, EF_SUBTITLE | ES_RECT_RND_E | ES_LABEL_E | EC_RED);
+            portraitScreen.addComponent(indicatorArmed);
+            
+            llc = new LCARSCorner("LLC", "", 5, 102, 350, 1, ES_SHAPE_SW | EC_ORANGE | ES_STATIC);
+            portraitScreen.addComponent(llc);
+            
+            urc = new LCARSCorner("URC", "", 360, 164, 340, 1, ES_SHAPE_NE | EC_ORANGE | ES_STATIC);
+            portraitScreen.addComponent(urc);
+
+            mode_1 = new LCARSButton("mode_1", "MODE 1", 550, 260, 2, EF_SUBTITLE | EC_ORANGE);
+            mode_1.addEventListener("click", updateModeDisplay);
+            portraitScreen.addComponent(mode_1);
+            
+            rectConnected = new LCARSRectangle("rect_c", "CONNECTED", 550, 390, 150, 45, ES_LABEL_C | EC_BLUE);
+            portraitScreen.addComponent(rectConnected);
+            
+            rectNotConnected = new LCARSRectangle("rect_nc", "NOT CONNECTED", 550, 390, 150, 45, ES_LABEL_C | EC_RED);
+            portraitScreen.addComponent(rectNotConnected);
+
+            mode_2 = new LCARSButton("mode_2", "MODE 2", 550, 440, 2, EF_SUBTITLE | EC_ORANGE);
+            mode_2.addEventListener("click", updateModeDisplay);
+            portraitScreen.addComponent(mode_2);
+
+            lrc = new LCARSCorner("LRC", "", 360, 570, 340, 1, ES_SHAPE_SE | EC_ORANGE | ES_STATIC);
+            portraitScreen.addComponent(lrc);
+
+            ulc_messages = new LCARSCorner("ULC_MESSAGES", "MESSAGES", 5, 632, 350, 1, ES_SHAPE_NW | EC_ORANGE | ES_STATIC);
+            portraitScreen.addComponent(ulc_messages);
+            
+            llc_messages = new LCARSCorner("LLC_MESSAGES", "", 5, 905, 670, 1, EF_BODY | ES_SHAPE_SW | EC_ORANGE | ES_STATIC);
+            portraitScreen.addComponent(llc_messages);
+            
+            ulc_end_cap = new LCARSRectangle("ulc_end_cap", "", 680, 967, 20, 30, ES_RECT_RND_E | EC_ORANGE);
+            portraitScreen.addComponent(ulc_end_cap);
+            
+            clear_button = new LCARSButton("clear_button", "", 5, 729, 1, EC_ORANGE | ES_STATIC);
+            portraitScreen.addComponent(clear_button);
+            
+            rect_messages = new LCARSRectangle("rect_messages", "", 5, 794, 150, 41, ES_LABEL_C | EC_ORANGE);
+            portraitScreen.addComponent(rect_messages);
+
+            blank_button = new LCARSButton("blank_button", "", 5, 840, 1, EC_ORANGE | ES_STATIC);
+            portraitScreen.addComponent(blank_button);
+
+
+            keypad = new LCARSKeypad("keypad_1", 20, 230, EF_SUBTITLE | ES_RECT_RND | EC_ORANGE, EKP_AUX_KEYS | ES_LABEL_SW | EF_BUTTON | EC_BLUE);
+            keypad.addEventListener("click", key_pressed);
+            keypad.setAuxText("OFF", "AWAY", "STAY", "MAX", "TEST", "BYPASS", "INSTANT", "CODE", "CHIME", " ", "READY", " ");
+            portraitScreen.addComponent(keypad);
+            
+            keypad.setVisible(false);
+            
+            armButton = new LCARSRectangle("arm", "ARM", 30, 260, 475, 125, EF_TITLE | EC_RED | ES_RECT_RND | ES_LABEL_C);
+            armButton.static = 0;
+            armButton.setComponentDynamics();
+            portraitScreen.addComponent(armButton);
+            
+            disarmButton = new LCARSRectangle("disarm", "DISARM", 30, 440, 475, 125, EF_TITLE | EC_BLUE | ES_RECT_RND | ES_LABEL_C);
+            disarmButton.static = 0;
+            disarmButton.setComponentDynamics();
+            portraitScreen.addComponent(disarmButton);
+            
+            messagesArea = new LCARSTextArea("textArea", "", 175, 680, 33, 6, EC_ORANGE);
+            portraitScreen.addComponent(messagesArea);
+            
+            /**
+             * Lanscape screen controls area
+             */
+            l_urc_end_cap = new LCARSRectangle("l_urc_end_cap", "", 5, 15, 20, 30, ES_RECT_RND_W | EC_ORANGE);
+            landscapeScreen.addComponent(l_urc_end_cap);
+            
+            l_text_title = new LCARSText("l_text_title", "SECURITY SYSTEM", 30, 19 + FONT_BUTTON_SIZE , EF_SUBTITLE | EC_ORANGE);
+            landscapeScreen.addComponent(l_text_title);
+            
+            l_urc = new LCARSCorner("L_URC", "", 285, 15, 415, 1, ES_SHAPE_NE | EC_ORANGE | ES_STATIC);
+            landscapeScreen.addComponent(l_urc);
+            
+            l_mode_1 = new LCARSButton("mode_1_l", "MODE 1", 550, 111, 2, EF_SUBTITLE | EC_ORANGE);
+            l_mode_1.addEventListener("click", updateModeDisplay);
+            landscapeScreen.addComponent(l_mode_1);
+            
+            l_armButton = new LCARSRectangle("arm_l", "ARM", 30, 111, 475, 125, EF_TITLE | EC_RED | ES_RECT_RND | ES_LABEL_C);
+            l_armButton.static = 0;
+            l_armButton.setComponentDynamics();
+            landscapeScreen.addComponent(l_armButton);
+            
+            l_rectConnected = new LCARSRectangle("l_rect_c", "CONNECTED", 550, 241, 150, 45, ES_LABEL_C | EC_BLUE);
+            landscapeScreen.addComponent(l_rectConnected);
+            
+            l_rectNotConnected = new LCARSRectangle("l_rect_nc", "NOT CONNECTED", 550, 241, 150, 45, ES_LABEL_C | EC_RED);
+            landscapeScreen.addComponent(l_rectNotConnected);
+            
+            l_mode_2 = new LCARSButton("mode_2_l", "MODE 2", 550, 291, 2, EF_SUBTITLE | EC_ORANGE);
+            l_mode_2.addEventListener("click", updateModeDisplay);
+            landscapeScreen.addComponent(l_mode_2);
+            
+            l_disarmButton = new LCARSRectangle("disarm_l", "DISARM", 30, 291, 475, 125, EF_TITLE | EC_BLUE | ES_RECT_RND | ES_LABEL_C);
+            l_disarmButton.static = 0;
+            l_disarmButton.setComponentDynamics();
+            landscapeScreen.addComponent(l_disarmButton);
+            
+            l_keypad = new LCARSKeypad("l_keypad_1", 20, 81, EF_SUBTITLE | ES_RECT_RND | EC_ORANGE, EKP_AUX_KEYS | ES_LABEL_SW | EF_BUTTON | EC_BLUE);
+            l_keypad.addEventListener("click", key_pressed);
+            l_keypad.setAuxText("OFF", "AWAY", "STAY", "MAX", "TEST", "BYPASS", "INSTANT", "CODE", "CHIME", " ", "READY", " ");
+            landscapeScreen.addComponent(l_keypad);
+            
+            l_keypad.setVisible(false);
+            
+            l_lrc = new LCARSCorner("L_LRC", "", 30, 421, 670, 1, ES_SHAPE_SE | EC_ORANGE | ES_STATIC);
+            landscapeScreen.addComponent(l_lrc);
+            
+            l_lrc_end_cap = new LCARSRectangle("l_lrc_end_cap", "", 5, 483, 20, 30, ES_RECT_RND_W | EC_ORANGE);
+            landscapeScreen.addComponent(l_lrc_end_cap);
+            
+            /**
+             * Lanscape screen indicator area
+             */
+            l_ulc = new LCARSCorner("L_ULC", "", 705, 15, 235, 1, ES_SHAPE_NW | EC_ORANGE | ES_STATIC);
+            landscapeScreen.addComponent(l_ulc);
+            
+            l_ulc_end_cap = new LCARSRectangle("l_ulc_end_cap", "", 945, 15, 20, 30, ES_RECT_RND_E | EC_ORANGE);
+            landscapeScreen.addComponent(l_ulc_end_cap);
+            
+            l_rectSpacer_upper = new LCARSRectangle("l_rectSpacer_upper", "", 705, 111, 150, 125, EF_SUBTITLE | EC_ORANGE);
+            landscapeScreen.addComponent(l_rectSpacer_upper);
+            
+            l_indicatorReady = new LCARSRectangle("l_indicator_ready", "READY", 860, 111, 105, 125, EF_BUTTON | ES_RECT_RND_E | ES_LABEL_E | EC_BLUE);
+            landscapeScreen.addComponent(l_indicatorReady);
+            
+            l_rectSpacer = new LCARSRectangle("l_rect_spacer", "STATUS", 705, 241, 150, 45, EF_BUTTON | EC_ORANGE);
+            landscapeScreen.addComponent(l_rectSpacer);
+            
+            l_indicatorArmed = new LCARSRectangle("l_indicator_armed", "ARMED", 860, 291, 105, 125, EF_BUTTON | ES_RECT_RND_E | ES_LABEL_E | EC_RED);
+            landscapeScreen.addComponent(l_indicatorArmed);
+
+            l_rectSpacer_lower = new LCARSRectangle("l_rectSpacer_lower", "", 705, 291, 150, 125, EF_SUBTITLE | EC_ORANGE);
+            landscapeScreen.addComponent(l_rectSpacer_lower);
+            
+            l_llc = new LCARSCorner("L_LLC", "", 705, 421, 235, 1, ES_SHAPE_SW | EC_ORANGE | ES_STATIC);
+            landscapeScreen.addComponent(l_llc);
+            
+            l_llc_end_cap = new LCARSRectangle("l_llc_end_cap", "", 945, 483, 20, 30, ES_RECT_RND_E | EC_ORANGE);
+            landscapeScreen.addComponent(l_llc_end_cap);
+           
+            indicatorReady.setEnabled(true);
+            
+            
+            /**
+             * Open the socket to the alarm panel server.
+             */
+            openSocket(window.location.hostname);
+            
+        }
+        
+        
+        /**
+         * Update the display based on the orientation of the device. Note the 180 degree case
+         * is not detected in iOS 8.x.
+         *    0: portrait screen is visible, landscape screen is hidden
+         *   90: portrait screen is hidden, landscape screen is visible
+         *  -90: portrait screen is hidden, landscape screen is visible
+         *  180: no screen change, last screen remains
+         */
+        var updateOrientation = function() {
+            switch(window.orientation) {
+                case 0:
+                    portraitScreen.divElement.style.visibility = 'visible';
+                    landscapeScreen.divElement.style.visibility = 'hidden';
+                    break;
+                case -90:
+                    portraitScreen.divElement.style.visibility = 'hidden';
+                    landscapeScreen.divElement.style.visibility = 'visible';
+                    break;
+                case 90:
+                    portraitScreen.divElement.style.visibility = 'hidden';
+                    landscapeScreen.divElement.style.visibility = 'visible';
+                    break;
+                case 180:
+                    portraitScreen.divElement.style.visibility = 'visible';
+                    landscapeScreen.divElement.style.visibility = 'hidden';
+                    break;
+                default:
+                    break;
+            }
+        }
+        </script>
+        
+    </head>
+
+    <body  bgcolor="#000000" onload="init();" onorientationchange="updateOrientation();">
+        
+    </body>
+    
+</html>
+
