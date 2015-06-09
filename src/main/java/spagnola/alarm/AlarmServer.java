@@ -14,6 +14,8 @@ import org.glassfish.grizzly.Grizzly;
 import org.glassfish.grizzly.ssl.SSLContextConfigurator;
 import org.glassfish.grizzly.ssl.SSLEngineConfigurator;
 import org.glassfish.grizzly.http.server.HttpServer;
+import org.glassfish.grizzly.http.server.NetworkListener;
+import org.glassfish.grizzly.http.server.CLStaticHttpHandler;
 import org.glassfish.grizzly.websockets.WebSocketAddOn;
 import org.glassfish.grizzly.websockets.WebSocketApplication;
 import org.glassfish.grizzly.websockets.WebSocketEngine;
@@ -46,12 +48,20 @@ public class AlarmServer {
         ALARM_HOST = properties.ALARM_HOST;
         ALARM_PORT = properties.ALARM_PORT;
         
-        
+
         /** Create the socket to talk to the alarm panel. */
         Socket alarmPanelSocket = new Socket(ALARM_HOST, ALARM_PORT);
         
         /** Create a Grizzly HttpServer to serve static resources for the web app, on PORT. */
         final HttpServer server = HttpServer.createSimpleServer(WEBAPP_PATH, PORT);
+        
+        /** Get the name of the JAR file for this application. */
+        String uriString = AlarmServer.class.getProtectionDomain().getCodeSource().getLocation().toURI().toString();
+        String jarFilename =  uriString.substring(uriString.lastIndexOf('/') + 1);
+        
+        /** Set up a handler to serve static content from within the JAR file. */
+        server.getServerConfiguration().addHttpHandler(
+            new CLStaticHttpHandler(new URLClassLoader(new URL[] {new File(jarFilename).toURI().toURL()}), "webapp/"), "/");
 
         /** Register the WebSockets add-on with the HttpServer. */
         server.getListener("grizzly").registerAddOn(new WebSocketAddOn());
@@ -124,8 +134,7 @@ public class AlarmServer {
         
         
         // Create SSLEngine configurator
-        return new SSLEngineConfigurator(sslContextConfig.createSSLContext(),
-                                         false, false, false);
+        return new SSLEngineConfigurator(sslContextConfig.createSSLContext(), false, false, false);
     }
 
 }

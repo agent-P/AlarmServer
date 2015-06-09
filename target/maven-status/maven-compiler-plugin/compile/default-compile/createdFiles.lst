@@ -1,6 +1,6 @@
-spagnola/alarm/AlarmApplication.class
-spagnola/alarm/AlarmProperties.class
 spagnola/alarm/AlarmServer$1.class
 spagnola/alarm/ReadThread.class
 spagnola/alarm/AlarmServer.class
+spagnola/alarm/AlarmApplication.class
+spagnola/alarm/AlarmProperties.class
 spagnola/websockets/AlarmWebSocket.class
