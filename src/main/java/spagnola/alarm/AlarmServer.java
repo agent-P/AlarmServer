@@ -7,6 +7,8 @@ package spagnola.alarm;
 import java.io.*;
 import java.net.*;
 import java.util.Properties;
+import java.util.Observable;
+import java.util.Observer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,7 +50,6 @@ public class AlarmServer {
         ALARM_HOST = properties.ALARM_HOST;
         ALARM_PORT = properties.ALARM_PORT;
         
-
         /** Create the socket to talk to the alarm panel. */
         Socket alarmPanelSocket = new Socket(ALARM_HOST, ALARM_PORT);
         
@@ -65,8 +66,6 @@ public class AlarmServer {
 
         /** Register the WebSockets add-on with the HttpServer. */
         server.getListener("grizzly").registerAddOn(new WebSocketAddOn());
-        //server.getListener("grizzly").setSSLEngineConfig(createSslConfiguration());
-        //server.getListener("grizzly").setSecure(true);
 
         /** Create and initialize the websocket alarm application. */
         final WebSocketApplication alarmApplication = new AlarmApplication();
@@ -82,6 +81,9 @@ public class AlarmServer {
         
         /** Set the ReadThread socket to the alarm panel. */
         readThread.setAlarmPanelSocket(alarmPanelSocket);
+        
+        /** Add Observer for the read thread object. */
+        readThread.addObserver((AlarmApplication)alarmApplication);
         
         /** Register a shutdown hook. */
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
@@ -111,30 +113,4 @@ public class AlarmServer {
             LOGGER.severe("There was an error while starting the server." + e.toString());
         }
     }
-    
-    /**
-     * Initialize server side SSL configuration.
-     *
-     * @return server side {@link SSLEngineConfigurator}.
-     */
-    private static SSLEngineConfigurator createSslConfiguration() {
-        // Initialize SSLContext configuration
-        SSLContextConfigurator sslContextConfig = new SSLContextConfigurator();
-        
-        ClassLoader cl = AlarmServer.class.getClassLoader();
-        // Set key store
-        URL keystoreUrl = cl.getResource("keystore.jks");
-        if (keystoreUrl != null) {
-            sslContextConfig.setKeyStoreFile(keystoreUrl.getFile());
-            sslContextConfig.setKeyStorePass("changeit");
-        }
-        else {
-            LOGGER.severe("Resource: keystore.jks, not found");
-        }
-        
-        
-        // Create SSLEngine configurator
-        return new SSLEngineConfigurator(sslContextConfig.createSSLContext(), false, false, false);
-    }
-
 }

@@ -27,6 +27,30 @@
             var host = window.location.hostname;
             
             
+            function get_appropriate_ws_protocol() {
+                var pcol;
+                var u = document.URL;
+                
+                /*
+                 * We open the websocket encrypted if this page came on an
+                 * https:// url itself, otherwise unencrypted
+                 */
+                
+                if (u.substring(0, 5) == "https") {
+                    pcol = "wss://";
+                    u = u.substr(8);
+                } else {
+                    pcol = "ws://";
+                    if (u.substring(0, 4) == "http")
+                    u = u.substr(7);
+                }
+                
+                u = u.split('/');
+                
+                return pcol;
+            }
+        
+        
             function openSocket(){
                 // Ensures only one connection is open at a time
                 if(webSocket != undefined && webSocket.readyState != WebSocket.CLOSED){
@@ -34,8 +58,11 @@
                     return;
                 }
                 // Create a new instance of the websocket
-                webSocket = new WebSocket("ws://" + host + ":8181/alarm-panel-decoder/panel");
-                 
+                protocol = get_appropriate_ws_protocol();
+                //webSocket = new WebSocket("ws://" + host + ":8181/alarm-panel-decoder/panel");
+                //webSocket = new WebSocket(protocol + host + ":8181/alarm-panel-decoder/panel");
+                webSocket = new WebSocket("wss://"  + host + "/alarm-panel-decoder/panel");
+
                 /**
                  * Binds functions to the listeners for the websocket.
                  */

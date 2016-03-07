@@ -38,8 +38,7 @@ public class AlarmProperties {
     /** Alarm allowed list of devices that can access the alarm panel from the network */
     private static String allowed = "";
     /** List of allowed IP addresses in a Set collection */
-    public static Set<String> ALLOWED_LIST = null;
-    
+    public static HashMap<String,String> ALLOWED = new HashMap<String, String>();
     
     protected AlarmProperties() {
         
@@ -73,7 +72,10 @@ public class AlarmProperties {
             allowed = properties.getProperty("allowed-list");
             /** If there is an allowed list, create a Set of the allowed list of IP addresses. */
             if(allowed != null) {
-                ALLOWED_LIST = new HashSet<String>(Arrays.asList(allowed.split(",")));
+                String arr[] = allowed.split(",");
+                for(int i=0; i<arr.length; i++) {
+                    ALLOWED.put(arr[i], null);
+                }
             }
             else {
                 LOGGER.severe("No allowed devices specified, sever exiting.");

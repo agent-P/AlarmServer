@@ -5,6 +5,11 @@ CACHE MANIFEST
 CACHE:
 LCARSKeypadTest.html
 js/LCARS_Components.js
-js/LCARS_Screens_iPhone.js
+js/LCARS_Screens.js
+js/LCARS_Portrait_Screen.js
+js/LCARS_Landscape_Screen.js
+js/LCARS_Display_Updates.js
 js/AlarmSocket.js
 img/apple-touch-icon.png
+Antonio-Light.ttf
+AccessDenied_403.html

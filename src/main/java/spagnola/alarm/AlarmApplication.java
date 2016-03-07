@@ -8,6 +8,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.text.*;
+import java.util.Observer;
 import java.util.Collections;
 import java.util.Set;
 import java.util.logging.Level;
@@ -34,9 +35,14 @@ import spagnola.websockets.*;
  *
  * @author Perry Spagnola
  */
-public class AlarmApplication extends WebSocketApplication {
+public class AlarmApplication extends WebSocketApplication implements Observer {
     private static final Logger logger = Logger.getLogger(AlarmApplication.class.getName());
+    
+    /** ALarm state codes. */
+    private static final String AWAY = "2";
+    private static final String OFF = "1";
 
+    
     /** Logged in members */
     private Set<WebSocket> members = Collections.newSetFromMap(DataStructures.<WebSocket, Boolean>getConcurrentMap());
 
@@ -51,6 +57,15 @@ public class AlarmApplication extends WebSocketApplication {
     
     /** Last message received from alarm panel. To broadcast immediately on connect. Initialized to null. */
     private String lastMessage = null;
+    
+    /** The WebSocket of the user device currently commanding the system. */
+    private WebSocket currentWebSocket = null;
+    
+    /** The IP address of the user device currently commanding the system. */
+    private String currentUser = null;
+    
+    /** Stack of pressed keys. Used for capturing user specific PIN during alarm state changes. */
+    private Stack<Character> keyPressedStack = new Stack<Character>();
     
     /**
      * Sets the socket for talking to the alram panel, and creates the PrintWriter
@@ -79,6 +94,9 @@ public class AlarmApplication extends WebSocketApplication {
     @Override
     public WebSocket createSocket(ProtocolHandler handler, HttpRequestPacket request, WebSocketListener... listeners) {
         
+        /** DEBUG: List the headers of the http request. */
+        logger.info(request.getHeaders().toString());
+        
         return new AlarmWebSocket(handler, request, listeners);
     }
 
@@ -96,6 +114,8 @@ public class AlarmApplication extends WebSocketApplication {
         
         StringBuffer response = new StringBuffer("");
         String user = ((AlarmWebSocket)websocket).getUser();
+        currentUser = new String(user);
+        currentWebSocket = websocket;
         
         if(data.length() == 1) {
             switch(data.charAt(0)) {
@@ -111,6 +131,7 @@ public class AlarmApplication extends WebSocketApplication {
                 case '9':
                 case '*':
                 case '#':
+                    keyPressedStack.push(data.charAt(0));
                     response.append("Key press...");
                     break;
                 default:
@@ -122,7 +143,15 @@ public class AlarmApplication extends WebSocketApplication {
             out.println(data);
         }
         else {
-            logger.warning("Data: " + data + " rejected from user: " + user);
+            if(data.equals("ARM")) {
+                arm(user);
+            }
+            else if(data.equals("DISARM")) {
+                disarm(user);
+            }
+            else {
+                logger.warning("Data: " + data + " rejected from user: " + user);
+            }
         }
     }
 
@@ -137,9 +166,20 @@ public class AlarmApplication extends WebSocketApplication {
         
         if(isAllowed(ipAddress)) {
             members.add(websocket);
+            send(websocket, "authentication", "access granted");
+            
+            /** Notify the device if it has a stored PIN. */
+            if(hasPIN(ipAddress)) {
+                send(websocket, "authentication", "PIN");
+                logger.info("user: " + ipAddress + ", has a PIN.");
+            }
+            else {
+                send(websocket, "authentication", "NO PIN");
+                logger.info("user: " + ipAddress + ", does not have a PIN.");
+            }
             
             /** If the last message from the alarm panel is not null, send it to the connecting
-             *  client to give fast current status. DOn't want to wait until nect broadcast.
+             *  client to give fast current status. Don't want to wait until next broadcast.
              */
             if(lastMessage != null) {
                 websocket.send(lastMessage);
@@ -149,6 +189,7 @@ public class AlarmApplication extends WebSocketApplication {
             broadcast("system", ((AlarmWebSocket)websocket).getUser() + " has connected.");
         }
         else {
+            send(websocket, "authentication", "access denied");
             websocket.close();
             ((AlarmWebSocket)websocket).setUser(ipAddress);
             broadcast("system", "Unauthorized connection attempt from: " + ((AlarmWebSocket)websocket).getUser());
@@ -170,6 +211,27 @@ public class AlarmApplication extends WebSocketApplication {
     }
 
     /**
+     * Sends the messages from the alarm controller and alarm panels to the argument
+     * specified web socket.
+     *
+     * @param websocket the websocket to send the message to
+     * @param device the device identifier
+     * @param text the text message
+     */
+    public void send(WebSocket websocket, String device, String text) {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        Date date = new Date();
+        final String timestamp = dateFormat.format(date);
+        
+        logger.log(Level.INFO, "Sending: ", new Object[]{text, device, ((AlarmWebSocket)websocket).getPeerIPAddress()});
+        final String jsonMessage = toJsonp(device, text, timestamp);
+        logger.log(Level.INFO, jsonMessage);
+        
+        websocket.send(jsonMessage);
+    }
+    
+    
+    /**
      * Broadcasts the messages from the alarm controller and alarm panels.
      *
      * @param device the device identifier
@@ -190,6 +252,7 @@ public class AlarmApplication extends WebSocketApplication {
     }
     
     
+    
     /**
      * Method to determine if the IP address argument is allowed to access the alarm application.
      * @param ipAddress  the IP address to test for allowed access
@@ -197,18 +260,51 @@ public class AlarmApplication extends WebSocketApplication {
      * @return <code>true</code> if allowed, <code>false</code> if not.
      */
     private static boolean isAllowed(String ipAddress) {
-        Set<String> ALLOWED_LIST = AlarmProperties.getInstance().ALLOWED_LIST;
+        HashMap<String,String> ALLOWED = AlarmProperties.getInstance().ALLOWED;
         
-        Iterator iter = ALLOWED_LIST.iterator();
-        while (iter.hasNext()) {
-            if(iter.next().toString().equals(ipAddress)) {
-                return true;
-            }
+        if(ALLOWED.containsKey(ipAddress)) {
+            return true;
         }
         
         return false;
     }
-
+    
+    
+    /**
+     * Method to determine if the IP address argument has an associated PIN stored.
+     * @param ipAddress  the IP address to test for an associated PIN
+     *
+     * @return <code>true</code> if has a PIN, <code>false</code> if not.
+     */
+    private static boolean hasPIN(String ipAddress) {
+        HashMap<String,String> ALLOWED = AlarmProperties.getInstance().ALLOWED;
+        
+        logger.info("value for: " + ipAddress + " is: " + ALLOWED.get(ipAddress));
+        
+        if(ALLOWED.get(ipAddress) != null) {
+            logger.info("PIN for: " + ipAddress + " is: not NULL");
+            return true;
+        }
+        
+        return false;
+    }
+    
+    
+    /**
+     *
+     */
+    private static void setPIN(String ipAddress, String PIN) {
+        AlarmProperties.getInstance().ALLOWED.put(ipAddress, PIN);
+    }
+    
+    
+    /**
+     *
+     */
+    private static String getPIN(String ipAddress) {
+        return AlarmProperties.getInstance().ALLOWED.get(ipAddress);
+    }
+    
     
     /**
      * Create the JSON string to broadcast to the keypad clients.
@@ -275,5 +371,101 @@ public class AlarmApplication extends WebSocketApplication {
         }
 
         return buffer.toString();
-    }    
+    }
+    
+    
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void update(Observable observable, Object arg) {
+        
+        final int CMD_SIZE = 5;
+        
+        logger.info("Readthread notification: " + arg);
+        
+        if(arg.equals("Alarm State Change")) {
+            logger.info("Alarm State Change detected...");
+            
+            StringBuffer str = new StringBuffer(CMD_SIZE);
+            /** Pop last 5 key presses off the keyPressedStack. */
+            for(int i=0; i<CMD_SIZE; i++) {
+                if(!keyPressedStack.empty()) {
+                    char key = keyPressedStack.pop();
+                    logger.info("key press: " + key);
+                    if(i>0) {
+                        logger.info("adding key to PIN: " + key);
+                        str.insert(0, key);
+                    }
+                }
+            }
+            logger.info("PIN: " + str);
+            
+            if(str.length() == 4) {
+                /** StringBuffer is the right length, set the PIN for the current user. */
+                setPIN(currentUser, str.toString());
+                
+                /** Notify the current user that a PIN is now stored. */
+                send(currentWebSocket, "authentication", "PIN");
+            }
+            else {
+                logger.warning("PIN incorrect length. PIN not set.");
+            }
+            
+            /** Clean up the keyPressedStack. */
+            keyPressedStack.removeAllElements();
+            
+            
+        }
+        else {
+            broadcast("alarm panel", arg.toString());
+        }
+    }
+    
+    
+    /**
+     * Process an "ARM" command from a user device.
+     *
+     * @param user the IP address of the user device.
+     */
+    private void arm(String user) {
+        logger.warning("User device: " + user + ", sent an ARM command...");
+        
+        sendPINCommand(user, AWAY);
+    }
+    
+    /**
+     * Process an "DISARM" command from a user device.
+     *
+     * @param user the IP address of the user device.
+     */
+    private void disarm(String user) {
+        logger.warning("User device: " + user + ", sent a DISARM command...");
+        
+        sendPINCommand(user, OFF);
+    }
+    
+    
+    /**
+     * Send a command that requires a PIN for the argument specified user.
+     *
+     * @param user the IP address of the user device.
+     * @param command the command that follows the user PIN
+     */
+    private void sendPINCommand(String user, String command) {
+        if(hasPIN(user)) {
+            /** The user has a PIN. Get the PIN to send the command. */
+            String PIN = getPIN(user);
+            /** Send the PIN to the alarm panel. */
+            out.println(PIN);
+            /** Send the state alarm state code to the alarm panel. */
+            out.println(command);
+        }
+        else {
+            /** Else, the user has no PIN. Log the error as severe. */
+            logger.severe("Command: " + command + ", attempt with no PIN from user: " + user);
+        }
+    }
+    
 }
+

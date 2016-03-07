@@ -1,10 +1,12 @@
 var webSocket;
 var messages = document.getElementById("messages");
 
+var authenticated = false;
+var pin = false;
 var dataFrame;
 
 
-function get_appropriate_ws_url() {
+function get_appropriate_ws_protocol() {
     var pcol;
     var u = document.URL;
     
@@ -24,34 +26,27 @@ function get_appropriate_ws_url() {
     
     u = u.split('/');
     
-    return pcol + u[0];
+    return pcol;
 }
 
 
 
 function openSocket(host) {
-    // Ensures only one connection is open at a time
+    /** Ensures only one connection is open at a time. */
     if(webSocket != undefined && webSocket.readyState != WebSocket.CLOSED){
         writeResponse("WebSocket is already opened.");
         return;
     }
-    // Create a new instance of the websocket
-    webSocket = new WebSocket("ws://" + host + ":8181/alarm-panel-decoder/panel");
+    /** Create a new instance of the websocket. */
+    protocol = get_appropriate_ws_protocol();
+    webSocket = new WebSocket(protocol + host + "/alarm-panel-decoder/panel");
     
     /**
      * Bind functions to the listeners for the websocket.
      */
     webSocket.onopen = function(event) {
-        updateConnectionIndicator('connected');
-        writeResponse("connected to: " + host);
         
-        // For reasons I can't determine, onopen gets called twice
-        // and the first time event.data is undefined.
-        // Leave a comment if you know the answer.
-        if(event.data == undefined)
-            return;
-        
-        writeResponse(event.data);
+        onOpen(host, event.data);
     };
     
     webSocket.onmessage = function(event) {
@@ -59,7 +54,6 @@ function openSocket(host) {
         var messageText = "error parsing message...";
         
         JSONobject = JSON.parse(event.data);
-        //alert(JSONobject.name);
         if(JSONobject.name == "alarm panel") {
             if(JSONobject.message == "!Sending..done") {
                 return;  // Don't write anything to screen.
@@ -78,6 +72,28 @@ function openSocket(host) {
             //writeResponse(dataFrame[1]);
             updateDisplay(dataFrame[1]);
         }
+        else if(JSONobject.name == "authentication") {
+            if(JSONobject.message == "access granted") {
+                authenticated = true;
+                messageText = "User authenticated.";
+            }
+            else if(JSONobject.message == "access denied") {
+                authenticated = false;
+                messageText = "User not authenticated.";
+            }
+            else if(JSONobject.message == "PIN") {
+                pin = true;
+                setMode(1);
+                updateModeDisplay();
+                return;  // Don't write anything to screen.
+            }
+            else if(JSONobject.message == "NO PIN") {
+                pin = false;
+                setMode(2);
+                updateModeDisplay();
+                return;  // Don't write anything to screen.
+            }
+        }
         else {
             messageText = JSONobject.message;
         }
@@ -91,10 +107,23 @@ function openSocket(host) {
 }
 
 /**
+ * Determines if the user has been authenticated.
+ */
+function isAuthenticated() {
+    return authenticated;
+}
+
+/**
+ * Determines if the user has a valid PIN.
+ */
+function hasPIN() {
+    return pin;
+}
+
+/**
  * Sends the value of the text input to the server
  */
-function send() {
-    var text = document.getElementById("messageinput").value;
+function send(text) {
     webSocket.send(text);
 }
 
@@ -103,11 +132,41 @@ function closeSocket() {
 }
 
 function writeResponse(text){
-    messagesArea.appendLine(text);
+    updateMessage(text);
 }
 
 function key_pressed(event) {
-    //messagesArea.appendLine(event.srcElement.id[0]);
     webSocket.send(event.srcElement.id[0]);
 }
+
+function arm_pressed(event) {
+    webSocket.send("ARM");
+}
+
+function disarm_pressed(event) {
+    webSocket.send("DISARM");
+}
+
+var onOpen;
+
+function setOnOpenCallback(callback) {
+    onOpen = callback;
+}
+
+var updateMessage;
+
+function setUpdateMessageCallback(callback) {
+    updateMessage = callback;
+}
+
+var updateDisplay;
+
+function setUpdateDisplayCallback(callback) {
+    updateDisplay = callback;
+}
+
+function setModeCallback(callback) {
+    setMode = callback;
+}
+
 
