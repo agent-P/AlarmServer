@@ -47,6 +47,7 @@ public class AlarmServer {
         AlarmProperties properties = AlarmProperties.getInstance();
         
         WEBAPP_PATH = properties.WEBAPP_PATH;
+        PORT = properties.PORT;
         ALARM_HOST = properties.ALARM_HOST;
         ALARM_PORT = properties.ALARM_PORT;
         

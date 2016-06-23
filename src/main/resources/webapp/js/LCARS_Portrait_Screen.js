@@ -15,8 +15,10 @@ var init_PortraitScreen = function() {
     portraitDivElement.style.height = "1300px";
     portraitDivElement.style.top = "5px";
     portraitDivElement.style.left = "0px";
+    portraitDivElement.style.webkitTransform =  'scale(0.45) translateX(-430px) translateY(-770px)';
 //    portraitDivElement.style.webkitTransform =  'scale(0.45) translateX(-440px) translateY(-575px)';
-    portraitDivElement.style.webkitTransform =  'translateX(10px) translateY(50px)';
+    //portraitDivElement.style.webkitTransform =  'scale(0.58) translateX(-250px) translateY(-470px)';
+    //portraitDivElement.style.webkitTransform =  'translateX(10px) translateY(50px)';
     
     portraitScreen = new LCARSBlankScreen('_portrait', '', "100%", "100%");
     

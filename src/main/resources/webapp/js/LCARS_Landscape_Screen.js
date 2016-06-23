@@ -11,7 +11,8 @@ var init_LandscapeScreen = function() {
     landscapeDivElement.style.height = "530px";
     landscapeDivElement.style.top = "5px";
     landscapeDivElement.style.left = "5px";
-    landscapeDivElement.style.webkitTransform = 'scale(0.75) translateX(-155px) translateY(-90px)';
+    //landscapeDivElement.style.webkitTransform = 'scale(0.75) translateX(-155px) translateY(-90px)';
+    landscapeDivElement.style.webkitTransform = 'scale(0.585) translateX(-350px) translateY(-190px)';
     
     document.body.appendChild(landscapeDivElement);
     
