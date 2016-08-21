@@ -45,8 +45,9 @@ function openSocket(host) {
      * Bind functions to the listeners for the websocket.
      */
     webSocket.onopen = function(event) {
-        
-        onOpen(host, event.data);
+
+        //onOpen(host, event.data);
+        updateDisplay(OPEN, host, event.data);
     };
     
     webSocket.onmessage = function(event) {
@@ -70,7 +71,7 @@ function openSocket(host) {
              */
             dataFrame = JSONobject.message.split("[", 2);
             //writeResponse(dataFrame[1]);
-            updateDisplay(dataFrame[1]);
+            updateDisplay(MESSAGE, host, dataFrame[1]);
         }
         else if(JSONobject.name == "authentication") {
             if(JSONobject.message == "access granted") {
@@ -101,8 +102,8 @@ function openSocket(host) {
     };
     
     webSocket.onclose = function(event) {
-        updateConnectionIndicator('not connected');
-        writeResponse("Connection closed");
+        updateDisplay(CLOSE, host, event.data);
+        setTimeout(function(){openSocket(host)}, 5000);
     };
 }
 

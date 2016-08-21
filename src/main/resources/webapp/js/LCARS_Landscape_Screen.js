@@ -47,9 +47,6 @@ var init_LandscapeScreen = function() {
     l_rectConnected = new LCARSRectangle("l_rect_c", "CONNECTED", 550, 241, 150, 45, ES_LABEL_C | EC_BLUE);
     landscapeScreen.addComponent(l_rectConnected);
     
-    l_rectNotConnected = new LCARSRectangle("l_rect_nc", "NOT CONNECTED", 550, 241, 150, 45, ES_LABEL_C | EC_RED);
-    landscapeScreen.addComponent(l_rectNotConnected);
-    
     l_mode_2 = new LCARSButton("mode_2_l", "MODE 2", 550, 291, 2, EF_SUBTITLE | EC_ORANGE);
     l_mode_2.addEventListener("click", updateMode);
     landscapeScreen.addComponent(l_mode_2);

@@ -18,76 +18,94 @@ var updateMessageArea = function(text) {
     messagesArea.appendLine(text);
 }
 
-var updateDisplay = function(data) {
+
+const OPEN = 'open';
+const CLOSE = 'close';
+const MESSAGE = 'message';
+var updateDisplay = function(updateType, host, data) {
     
-    /**
-     * Update the ready indicator.
-     */
-    if(data[0] == '1') {
-        _ready = true;
-        indicatorReady.setEnabled(true);
-        l_indicatorReady.setEnabled(true);
-        if(mode == 1) {
-            armButton.setEnabled(true);
-            l_armButton.setEnabled(true);
-        }
+    if(updateType == OPEN) {
+        onOpen(host, data);
+    }
+    else if(updateType == CLOSE) {
+        onClose(host);
     }
     else {
-        _ready = false;
-        indicatorReady.setEnabled(false);
-        l_indicatorReady.setEnabled(false);
-        if(mode == 1) {
-            armButton.setEnabled(false);
-            l_armButton.setEnabled(false);
-        }
-    }
-    
-    /**
-     * Update the armed indicator.
-     */
-    if(data[2] == '1' || data[1] == '1') {
-        /** If an Armed state is detected. Enable the 'Armed' indicator. */
-        _armed = true;
-        indicatorArmed.setEnabled(true);
-        l_indicatorArmed.setEnabled(true);
-        if(mode == 1) {
-            disarmButton.setEnabled(true);
-            l_disarmButton.setEnabled(true);
-        }
         
-        if(data[2] == '1' && data[12] == '0') {
-            /** If Armed - Stay is detected. Also show the 'Stay' indicator. */
-            showArmedStay();
-        }
-        else if(data[1] == '1' && data[12] == '0') {
-            /** Else if Armed - Away is detected. Also show the 'Away' indicator. */
-            showArmedAway();
-        }
-        else if(data[1] == '1' && data[12] == '1') {
-            /** Else if Armed - Max is detected. Also show the 'Max' indicator. */
-            showArmedMax();
-        }
-        else if(data[2] == '1' && data[12] == '1') {
-            /** Else if Armed - Instant is detected. Also show the 'Instant' indicator. */
-            showArmedInstant();
+        /**
+         * Blink the connected indicator.
+         */
+        rectConnected.offBlink();
+        l_rectConnected.offBlink();
+        
+        /**
+         * Update the ready indicator.
+         */
+        if(data[0] == '1') {
+            _ready = true;
+            indicatorReady.setEnabled(true);
+            l_indicatorReady.setEnabled(true);
+            if(mode == 1) {
+                armButton.setEnabled(true);
+                l_armButton.setEnabled(true);
+            }
         }
         else {
-            /** Else no specific Arm state detected. Show none. */
+            _ready = false;
+            indicatorReady.setEnabled(false);
+            l_indicatorReady.setEnabled(false);
+            if(mode == 1) {
+                armButton.setEnabled(false);
+                l_armButton.setEnabled(false);
+            }
+        }
+        
+        /**
+         * Update the armed indicator.
+         */
+        if(data[2] == '1' || data[1] == '1') {
+            /** If an Armed state is detected. Enable the 'Armed' indicator. */
+            _armed = true;
+            indicatorArmed.setEnabled(true);
+            l_indicatorArmed.setEnabled(true);
+            if(mode == 1) {
+                disarmButton.setEnabled(true);
+                l_disarmButton.setEnabled(true);
+            }
+            
+            if(data[2] == '1' && data[12] == '0') {
+                /** If Armed - Stay is detected. Also show the 'Stay' indicator. */
+                showArmedStay();
+            }
+            else if(data[1] == '1' && data[12] == '0') {
+                /** Else if Armed - Away is detected. Also show the 'Away' indicator. */
+                showArmedAway();
+            }
+            else if(data[1] == '1' && data[12] == '1') {
+                /** Else if Armed - Max is detected. Also show the 'Max' indicator. */
+                showArmedMax();
+            }
+            else if(data[2] == '1' && data[12] == '1') {
+                /** Else if Armed - Instant is detected. Also show the 'Instant' indicator. */
+                showArmedInstant();
+            }
+            else {
+                /** Else no specific Arm state detected. Show none. */
+                showArmedNone();
+            }
+        }
+        else {
+            _armed = false;
+            indicatorArmed.setEnabled(false);
+            l_indicatorArmed.setEnabled(false);
+            if(mode == 1) {
+                disarmButton.setEnabled(false);
+                l_disarmButton.setEnabled(false);
+            }
+            
             showArmedNone();
         }
     }
-    else {
-        _armed = false;
-        indicatorArmed.setEnabled(false);
-        l_indicatorArmed.setEnabled(false);
-        if(mode == 1) {
-            disarmButton.setEnabled(false);
-            l_disarmButton.setEnabled(false);
-        }
-        
-        showArmedNone();
-    }
-    
 }
 
 
@@ -166,16 +184,18 @@ var hideArmedSpacer = function() {
 
 var updateConnectionIndicator = function(status) {
     if(status == 'connected') {
-        rectConnected.setVisible(true);
-        rectNotConnected.setVisible(false);
-        l_rectConnected.setVisible(true);
-        l_rectNotConnected.setVisible(false);
+        //writeResponse("connected status is: " + status);
+        rectConnected.setBlinking(false);
+        rectConnected.setText("CONNECTED");
+        l_rectConnected.setBlinking(false);
+        l_rectConnected.setText("CONNECTED");
     }
     else {
-        rectConnected.setVisible(false);
-        rectNotConnected.setVisible(true);
-        l_rectConnected.setVisible(false);
-        l_rectNotConnected.setVisible(true);
+        //writeResponse("disconnected status is: " + status);
+        rectConnected.setBlinking(true, EC_RED);
+        rectConnected.setText("NOT CONNECTED");
+        l_rectConnected.setBlinking(true, EC_RED);
+        l_rectConnected.setText("NOT CONNECTED");
         indicatorReady.setEnabled(false);
         indicatorArmed.setEnabled(false);
         l_indicatorReady.setEnabled(false);
@@ -255,27 +275,21 @@ var updateModeDisplay = function() {
  *  180: no screen change, last screen remains
  */
 var updateOrientation = function() {
-    //            alert(window.screen.width + ", " + window.screen.height);
-    //            alert(window.orientation);
     switch(window.orientation) {
         case 0:
             landscapeDivElement.style.visibility = 'hidden';
-            //document.body.removeChild(landscapeDivElement);
             portraitScreen.element.style.visibility = 'visible';
             break;
         case -90:
             portraitScreen.element.style.visibility = 'hidden';
-            //document.body.appendChild(landscapeDivElement);
             landscapeDivElement.style.visibility = 'visible';
             break;
         case 90:
             portraitScreen.element.style.visibility = 'hidden';
-            //document.body.appendChild(landscapeDivElement);
             landscapeDivElement.style.visibility = 'visible';
             break;
         case 180:
             landscapeDivElement.style.visibility = 'hidden';
-            //document.body.removeChild(landscapeDivElement);
             portraitScreen.element.style.visibility = 'visible';
             break;
 
@@ -295,5 +309,14 @@ var onOpen = function(host, message) {
     
     if(message !== undefined)
         updateMessageArea(message);
+    
+}
 
+/**
+ * Manage the display when the websocket close event occurs.
+ */
+var onClose = function(host) {
+    
+    updateConnectionIndicator('disconnected');
+    updateMessageArea("disconnected from: " + host);
 }

@@ -25,19 +25,31 @@
         <script language="javascript" type="text/javascript">
         
         
+        var orientation = null;
         
         /**
          * The application initialization function ************************************************
          */
         var init = function() {
             
+            processArgs();
+            
             LCARS.setFont("LCARS");
             
             init_PortraitScreen();
             init_LandscapeScreen();
             
-           
-            updateOrientation();
+            if(orientation == 'portrait') {
+                landscapeDivElement.style.visibility = 'hidden';
+                portraitScreen.element.style.visibility = 'visible';
+            }
+            else if(orientation == 'landscape') {
+                portraitScreen.element.style.visibility = 'hidden';
+                landscapeDivElement.style.visibility = 'visible';
+            }
+            else {
+                updateOrientation();
+            }
            
            
             /**
@@ -47,8 +59,15 @@
             
         }
         
+        var processArgs = function() {
+            var parameters = location.search.substring(1).split("&");
+            
+            orientation = parameters[0];
+            
+        }
         
         window.onscroll = function () { window.scrollTo(0, 0); };
+        
         </script>
         
     </head>

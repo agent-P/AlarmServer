@@ -60,9 +60,6 @@ var init_PortraitScreen = function() {
     rectConnected = new LCARSRectangle("rect_c", "CONNECTED", 550, 390, 150, 45, ES_LABEL_C | EC_BLUE);
     portraitScreen.addComponent(rectConnected);
     
-    rectNotConnected = new LCARSRectangle("rect_nc", "NOT CONNECTED", 550, 390, 150, 45, ES_LABEL_C | EC_RED);
-    portraitScreen.addComponent(rectNotConnected);
-    
     mode_2 = new LCARSButton("mode_2", "MODE 2", 550, 440, 2, EF_SUBTITLE | EC_ORANGE);
     mode_2.addEventListener("click", updateMode);
     portraitScreen.addComponent(mode_2);
