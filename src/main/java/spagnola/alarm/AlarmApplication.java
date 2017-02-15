@@ -132,7 +132,7 @@ public class AlarmApplication extends WebSocketApplication implements Observer {
                 case '*':
                 case '#':
                     keyPressedStack.push(data.charAt(0));
-                    response.append("Key press...");
+                    response.append("Key press: " + data.charAt(0));
                     break;
                 default:
                     response.append("unknown key...");

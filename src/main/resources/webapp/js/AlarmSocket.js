@@ -65,6 +65,7 @@ function openSocket(host) {
              */
             var tempString = JSONobject.message.split("/", 2);
             messageText = tempString[1];
+            //console.log("alarm panel: " + messageText);
             
             /**
              * Parse out the panel control data frame.
@@ -94,9 +95,14 @@ function openSocket(host) {
                 updateModeDisplay();
                 return;  // Don't write anything to screen.
             }
+            //console.log("authentication: " + messageText);
         }
         else {
             messageText = JSONobject.message;
+            //console.log("Not alarm panel: " + messageText);
+            //console.log("JSON: " + JSONobject.name + " : " + JSONobject.message);
+            var parsedString = JSONobject.message.split(":");
+            //console.log("Parsed String: " + parsedString);
         }
         writeResponse(messageText);
     };
